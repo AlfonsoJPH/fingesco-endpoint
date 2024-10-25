@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  redis-api:
+    build: .
+    container_name: redis-microservice
+    ports:
+      - "3001:3001"  # Puerto para el microservicio
+    environment:
+      REDIS_HOST: <ip-del-redis>  # Reemplaza con la IP o nombre del host de Redis
+      REDIS_PORT: 6379
+      SERVER_PORT: 3001
