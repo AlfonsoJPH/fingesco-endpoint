@@ -1,18 +1,28 @@
 const request = require('supertest');
 const { app, redisClient, closeServer } = require('../server'); // Asegúrate de exportar correctamente
-const Redis = require('redis-mock');
 const config = require('../config');
 
-// Crear una instancia simulada de Redis
-const mockRedisClient = Redis.createClient();
 
 beforeAll(async () => {
-    await mockRedisClient.hset('03110411', 'temperature', '20', 'humidity', '50');
+    try {
+        const sensores = {
+            '03110411': { temperature: '20', humidity: '50' },
+            '03110410': { temperature: '22', humidity: '45' }
+        };
+
+        // Almacena cada sensor como un hash en Redis
+        for (const [sensorId, data] of Object.entries(sensores)) {
+            await redisClient.hSet(sensorId, data);
+        }
+
+        console.log('Datos de sensores almacenados en Redis');
+    } catch (error) {
+        console.error('Error al almacenar los datos de sensores en Redis:', error);
+    }
 });
 
 afterAll(async () => {
     // Cerrar el cliente Redis después de las pruebas
-    await mockRedisClient.quit();
     await redisClient.quit();
     // Cerrar el servidor después de las pruebas
     await closeServer();
