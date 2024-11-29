@@ -1,6 +1,6 @@
 const request = require('supertest');
-const { app, redisClient, closeServer } = require('../server'); // Asegúrate de exportar correctamente
-const config = require('../config');
+const { app, redisClient, closeServer } = require('../src/server'); // Asegúrate de exportar correctamente
+const config = require('../src/config/index.js');
 
 
 beforeAll(async () => {
