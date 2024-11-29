@@ -1,5 +1,7 @@
 const request = require('supertest');
-const { app, redisClient, closeServer } = require('../src/server'); // Asegúrate de exportar correctamente
+const { closeServer } = require('../src/server'); // Asegúrate de exportar correctamente
+const { redisClient } = require('../src/services/redisService.js'); // Asegúrate de exportar correctamente
+const { app } = require('../src/app.js'); // Asegúrate de exportar correctamente
 const config = require('../src/config/index.js');
 
 
