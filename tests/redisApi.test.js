@@ -3,7 +3,20 @@ const { closeServer } = require('../src/server'); // Asegúrate de exportar corr
 const { redisClient } = require('../src/services/redisService.js'); // Asegúrate de exportar correctamente
 const { app } = require('../src/app.js'); // Asegúrate de exportar correctamente
 const config = require('../src/config/index.js');
-
+const winston = require('winston');
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.printf(({ timestamp, level, message }) => {
+      return `${timestamp} ${level}: ${message}`;
+    })
+  ),
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({ filename: 'combined.log' })
+  ]
+});
 
 beforeAll(async () => {
     try {
@@ -17,9 +30,9 @@ beforeAll(async () => {
             await redisClient.hSet(sensorId, data);
         }
 
-        console.log('Datos de sensores almacenados en Redis');
+        logger.info('Datos de sensores almacenados en Redis');
     } catch (error) {
-        console.error('Error al almacenar los datos de sensores en Redis:', error);
+        logger.error(`Error al almacenar los datos de sensores en Redis: ${error.message}`);
     }
 });
 

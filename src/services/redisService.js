@@ -1,8 +1,23 @@
 const redis = require('redis');
 const config = require('../config');
+const winston = require('winston');
 
 const redisClient = redis.createClient({
   url: `redis://${config.redisHost}:${config.redisPort}`,
+});
+
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.printf(({ timestamp, level, message }) => {
+      return `${timestamp} ${level}: ${message}`;
+    })
+  ),
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({ filename: 'combined.log' })
+  ]
 });
 
 const getAllKeys = async () => await redisClient.keys('*');
@@ -10,13 +25,17 @@ const getAllKeys = async () => await redisClient.keys('*');
 const getSensorData = async (sensorId, campo) => {
   const sensorExists = await redisClient.exists(sensorId);
   if (!sensorExists) {
-    throw { status: 404, message: `El sensor con ID ${sensorId} no fue encontrado` };
+    const errorMessage = `El sensor con ID ${sensorId} no fue encontrado`;
+    logger.error(errorMessage);
+    throw { status: 404, message: errorMessage };
   }
 
   if (campo) {
     const data = await redisClient.hGet(sensorId, campo);
     if (data === null) {
-      throw { status: 404, message: `El campo ${campo} no fue encontrado para el sensor ${sensorId}` };
+      const errorMessage = `El campo ${campo} no fue encontrado para el sensor ${sensorId}`;
+      logger.error(errorMessage);
+      throw { status: 404, message: errorMessage };
     }
     return { [campo]: data };
   }
