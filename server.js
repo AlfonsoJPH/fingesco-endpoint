@@ -1,6 +1,31 @@
 const express = require('express');
 const redis = require('redis');
 const config = require('./config');
+const timestampFormat = 'MMM-DD-YYYY HH:mm:ss';
+const winston = require('winston')
+const { combine, timestamp, json, printf } = winston.format;
+
+const logger = winston.createLogger({
+  format: combine(
+    timestamp({ format: timestampFormat }),
+    json(),
+    printf(({ timestamp, level, message, ...data }) => {
+      const response = {
+        level,
+        message,
+        data, // metadata
+      };
+
+      return JSON.stringify(response);
+    })
+  ),
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({
+      filename: 'logs/endpoint-logs.log',
+    }),
+  ],
+});
 
 const app = express();
 app.use(express.json());
@@ -9,7 +34,7 @@ app.use(express.json());
 const redisClient = redis.createClient({
   url: `redis://${config.redisHost}:${config.redisPort}`
 });
-redisClient.connect().catch(console.error);
+redisClient.connect().catch(logger.error);
 
 // Middleware para verificar API Key
 const apiKeyMiddleware = (req, res, next) => {
@@ -23,6 +48,7 @@ const apiKeyMiddleware = (req, res, next) => {
 // Health Check Endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'UP' });
+  logger.info('Comprobado el estado del sistema.');
 });
 
 // Aplicar middleware a todas las rutas
@@ -33,8 +59,9 @@ app.get('/recursos', async (req, res) => {
   try {
     const keys = await redisClient.keys('*');
     res.json({ topics: keys });
+    logger.info('Solicitud de todos los requisitos del sistema');
   } catch (err) {
-    console.error(err);
+    logger.error('Error al obtener los recursos', err);
     res.status(500).json({ message: 'Error al obtener los recursos' });
   }
 });
@@ -46,6 +73,8 @@ app.post('/recursos', async (req, res) => {
 
   // Verificar que `sensorId` esté presente en la solicitud
   if (!sensorId) {
+    const err = `El sensorId es no está presente en la solicitud`;
+    logger.error(err);
     return res.status(400).json({ message: 'El sensorId es obligatorio' });
   }
 
@@ -53,25 +82,30 @@ app.post('/recursos', async (req, res) => {
     // Verificar si el sensor existe
     const sensorExists = await redisClient.exists(sensorId);
     if (!sensorExists) {
-      return res.status(404).json({ message: `El sensor con ID ${sensorId} no fue encontrado` });
+        const err = `El sensor con ID ${sensorId} no fue encontrado`;
+        logger.error(err);
+        return res.status(404).json({ message: err });
     }
 
     // Si se especifica un campo, devolver solo ese campo
     if (campo) {
       const data = await redisClient.hGet(sensorId, campo);
       if (data === null) {
-        return res.status(404).json({ message: `El campo ${campo} no fue encontrado para el sensor ${sensorId}` });
+        const err = `El campo ${campo} no fue encontrado para el sensor ${sensorId}`;
+        logger.error(err);
+        return res.status(404).json({ message: err });
       }
+      logger.info(`Devolviendo el campo ${campo} del sensor ${sensorId}`);
       return res.json({ [campo]: data });
     }
 
     // Si no se especifica un campo, devolver todos los campos del sensor
     const data = await redisClient.hGetAll(sensorId);
-    console.log(data);
+    logger.info(`Devolviendo todos los campos del sensor ${sensorId}`);
     res.json(data);
 
   } catch (err) {
-    console.error(err);
+    logger.error('Error al obtener la información del recurso', err);
     res.status(500).json({ message: 'Error al obtener la información del recurso' });
   }
 });
@@ -89,8 +123,9 @@ app.get('/sensores', async (req, res) => {
     }
 
     res.json(sensores);
+    logger.info('Devolviendo la información de todos los sensores de un endpoint');
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Error al obtener la información de los sensores' });
   }
 });
@@ -98,7 +133,7 @@ app.get('/sensores', async (req, res) => {
 
 // Exportar la aplicación y el cliente Redis
 const server = app.listen(config.serverPort, () => {
-  console.log(`Microservicio Redis corriendo en el puerto ${config.serverPort}`);
+  logger.info(`Microservicio Redis corriendo en el puerto ${config.serverPort}`);
 });
 
 
