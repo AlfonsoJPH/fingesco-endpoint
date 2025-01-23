@@ -15,6 +15,7 @@ const logger = winston.createLogger({
 });
 
 const listarRecursos = async (req, res) => {
+  logger.info('Obteniendo recursos');
   try {
     const keys = await getAllKeys();
     res.json({ topics: keys });

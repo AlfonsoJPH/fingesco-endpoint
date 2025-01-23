@@ -12,8 +12,11 @@ RUN npm install
 # Copiar el resto del código
 COPY . .
 
+# Ejecutar el script de inicialización
+CMD [ "node", "tests/seedRedis.js" ]
+
 # Exponer el puerto desde la variable de entorno
 EXPOSE ${SERVER_PORT}
 
 # Comando para ejecutar la aplicación
-CMD ["node", "index.js"]
+CMD ["node", "src/server.js"]

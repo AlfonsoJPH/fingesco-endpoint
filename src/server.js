@@ -1,5 +1,4 @@
-const express = require('express');
-const redisClient = require('./redisClient');
+const app = require('./app');
 const config = require('./config');
 const winston = require('winston');
 
@@ -16,12 +15,6 @@ const logger = winston.createLogger({
     new winston.transports.Console(),
     new winston.transports.File({ filename: 'combined.log' })
   ]
-});
-
-const app = express();
-
-redisClient.connect().catch((err) => {
-  logger.error(`Error al conectar a Redis: ${err.message}`);
 });
 
 const server = app.listen(config.serverPort, () => {

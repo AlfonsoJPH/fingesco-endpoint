@@ -1,8 +1,8 @@
-const redis = require('redis');
+const { createClient } = require('redis');
 const config = require('../config');
 const winston = require('winston');
 
-const redisClient = redis.createClient({
+const redisClient = createClient({
   url: `redis://${config.redisHost}:${config.redisPort}`,
 });
 
@@ -19,6 +19,15 @@ const logger = winston.createLogger({
     new winston.transports.File({ filename: 'combined.log' })
   ]
 });
+
+redisClient.on('error', (err) => {
+  logger.error(`Redis Client Error: ${err.message}`);
+  logger.error(err);
+});
+
+const connectRedis = async () => {
+  await redisClient.connect();
+};
 
 const getAllKeys = async () => await redisClient.keys('*');
 
@@ -51,4 +60,4 @@ const getAllSensorData = async (keys) => {
   return sensores;
 };
 
-module.exports = { redisClient, getAllKeys, getSensorData, getAllSensorData };
+module.exports = { redisClient, connectRedis, getAllKeys, getSensorData, getAllSensorData };

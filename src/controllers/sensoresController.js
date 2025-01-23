@@ -15,6 +15,7 @@ const logger = winston.createLogger({
 });
 
 const listarSensores = async (req, res) => {
+  logger.info('Obteniendo sensores');
   try {
     const keys = await getAllKeys();
     const sensores = await getAllSensorData(keys);
